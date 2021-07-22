@@ -1,0 +1,3 @@
+[build-system]
+requires = ['nox', 'setuptools', 'wheel', 'envsubst']
+build-backend = 'setuptools.build_meta'
