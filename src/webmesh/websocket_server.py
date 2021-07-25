@@ -24,7 +24,7 @@ class WSClient:
 
 
 class WSServer:
-    def __init__(self, host: str = '0.0.0.0', port: int = 8080, debug: bool = False):
+    def __init__(self, host: str = '0.0.0.0', port: int = 4269, debug: bool = False):
         self.host = host
         self.port = port
         self.server = None
