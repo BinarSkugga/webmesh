@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import functools
 import json
 import logging
@@ -8,10 +9,18 @@ import uuid
 from multiprocessing.pool import ThreadPool
 
 import websockets
+from websockets import WebSocketServerProtocol
 from websockets.exceptions import WebSocketException
 
 
 logging.basicConfig(level=logging.DEBUG)
+
+
+@dataclasses.dataclass
+class WSClient:
+    id: str
+    socket: WebSocketServerProtocol
+    logger: logging.Logger
 
 
 class WSServer:
@@ -44,45 +53,45 @@ class WSServer:
 
     def _on_connect(self, websocket):
         id = uuid.uuid4().hex
-        self.clients[id] = {'socket': websocket}
-        self.on_connect(id, websocket)
+        self.clients[id] = WSClient(id, websocket, logging.getLogger(f'webmesh.client.{id}'))
+        self.on_connect(self.clients[id])
+        return self.clients[id]
+
+    def on_connect(self, client: WSClient):
+        client.logger.info(f'Connected.')
+
+    def _on_disconnect(self, client: WSClient):
+        self.on_disconnect(client)
+        del self.clients[client.id]
         return id
 
-    def on_connect(self, id: str, websocket):
-        self.logger.info(f'Client \'{id}\' connected.')
-
-    def _on_disconnect(self, id: str, websocket):
-        del self.clients[id]
-        self.on_disconnect(id, websocket)
-        return id
-
-    def on_disconnect(self, id: str, websocket):
-        self.logger.info(f'Client \'{id}\' disconnected.')
+    def on_disconnect(self, client: WSClient):
+        client.logger.info(f'Disconnected.')
 
     async def handler(self, websocket, path):
-        id = self._on_connect(websocket)
+        client = self._on_connect(websocket)
         try:
             async for message in websocket:
                 message = json.loads(message)
                 path = message['path']
                 data = message['data'] if 'data' in message else None
-                self.logger.debug(f'[{id}] Message received on {path}: {data}')
+                client.logger.debug(f'Message received on {path}: {data}')
                 if path in self.consumers:
                     consumer = self.consumers[path]
-                    response = self.thread_pool.apply(consumer, args=[data, path, id])
+                    response = self.thread_pool.apply(consumer, args=[data, path, client.id])
                     if response is not None:
                         await websocket.send(json.dumps(response))
                 else:
-                    await websocket.send(self.on_not_found(data, path, id))
+                    await websocket.send(self.on_not_found(data, path, client.id))
         except WebSocketException:
             pass
         finally:
-            self._on_disconnect(id, websocket)
+            self._on_disconnect(client)
 
     async def run(self, stop):
-        self.server = websockets.serve(self.handler, self.host, self.port)
-        await self.server
-        await stop
+        async with websockets.serve(self.handler, self.host, self.port) as ws_server:
+            self.server = ws_server
+            await stop
 
     def start(self):
         try:
