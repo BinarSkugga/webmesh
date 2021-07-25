@@ -25,3 +25,12 @@ def echo(payload, path, client: WebMeshConnection):
 
 server.start()
 ```
+
+This is all good and pretty but by default, WebMesh uses [msgpack](https://github.com/msgpack/msgpack-python) and zlib to communicate which makes it hard to manually use. You can change the serialization layer by providing an implementation of the `AbstractMessageSerializer` class. WebMesh provides a simple JSON serializer that you can pass into your server's constructor:
+
+```python
+from webmesh.webmesh_server import WebMeshServer
+from webmesh.message_serializers import StandardJsonSerializer
+
+server = WebMeshServer(message_serializer=StandardJsonSerializer())
+```

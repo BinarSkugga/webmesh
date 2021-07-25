@@ -5,16 +5,14 @@ import json
 import logging
 import signal
 import platform
-import traceback
 import uuid
 from multiprocessing.pool import ThreadPool
-from time import sleep
 
 import websockets
 from websockets import WebSocketServerProtocol, WebSocketException
 
 from webmesh.message_protocols import AbstractMessageProtocol, SimpleDictProtocol
-from webmesh.message_serializers import AbstractMessageSerializer, MessagePackSerializer
+from webmesh.message_serializers import AbstractMessageSerializer, MessagePackSerializer, StandardJsonSerializer
 
 
 @dataclasses.dataclass
@@ -134,7 +132,7 @@ if __name__ == '__main__':
                                                     '[%(threadName)s]'
                                                     '[%(filename)s:%(funcName)s:%(lineno)d]:'
                                                     ' %(message)s')
-    server = WebMeshServer()
+    server = WebMeshServer(message_serializer=StandardJsonSerializer())
 
 
     @server.on('/')
