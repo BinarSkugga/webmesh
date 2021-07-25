@@ -13,9 +13,7 @@ from websockets import WebSocketServerProtocol
 from websockets.exceptions import WebSocketException
 
 from webmesh.message_protocols import AbstractMessageProtocol, SimpleDictProtocol
-from webmesh.message_serializers import AbstractMessageSerializer, StandardJsonSerializer, MessagePackSerializer
-
-logging.basicConfig(level=logging.DEBUG)
+from webmesh.message_serializers import AbstractMessageSerializer, MessagePackSerializer
 
 
 @dataclasses.dataclass
@@ -118,17 +116,19 @@ class WebMeshServer:
         loop.run_until_complete(self.run(stop))
 
 
-server = WebMeshServer()
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+    server = WebMeshServer()
 
 
-@server.on('/')
-def echo(payload, path, id):
-    return payload
+    @server.on('/')
+    def echo(payload, path, id):
+        return payload
 
 
-@server.on('/id')
-def id(payload, path, id):
-    return id
+    @server.on('/id')
+    def id(payload, path, id):
+        return id
 
 
-server.start()
+    server.start()
