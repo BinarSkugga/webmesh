@@ -12,7 +12,7 @@ Simply execute: `pip install webmesh`
 
 
 ## How to use
-WebMesh's server works like a standard HTTP server. It uses a declarative syntax with decorators defining callbacks on defined routes. Here's the basic example for a locally accessible echo server:
+WebMesh's server works like a standard HTTP server. It uses a declarative syntax with decorators defining callbacks on routes. Here's the basic example for a locally accessible echo server:
 
 ```python
 from webmesh.webmesh_server import WebMeshServer, WebMeshConnection
