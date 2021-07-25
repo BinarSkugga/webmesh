@@ -12,6 +12,7 @@ import websockets
 from websockets import WebSocketServerProtocol
 from websockets.exceptions import WebSocketException
 
+from src.webmesh.message_serializers import AbstractMessageSerializer, StandardJsonSerializer
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -24,10 +25,15 @@ class WebMeshClient:
 
 
 class WebMeshServer:
-    def __init__(self, host: str = '0.0.0.0', port: int = 4269, debug: bool = False):
+    def __init__(self,
+                 host: str = '0.0.0.0', port: int = 4269,
+                 debug: bool = False,
+                 message_protocol: AbstractMessageSerializer = StandardJsonSerializer()
+                 ):
         self.host = host
         self.port = port
         self.server = None
+        self.message_protocol = message_protocol
         self.consumers = {}
         self.clients = {}
         self.thread_pool = ThreadPool()
@@ -72,7 +78,7 @@ class WebMeshServer:
         client = self._on_connect(websocket)
         try:
             async for message in websocket:
-                message = json.loads(message)
+                message = self.message_protocol.from_str(message)
                 path = message['path']
                 data = message['data'] if 'data' in message else None
                 client.logger.debug(f'Message received on {path}: {data}')
@@ -80,6 +86,7 @@ class WebMeshServer:
                     consumer = self.consumers[path]
                     response = self.thread_pool.apply(consumer, args=[data, path, client.id])
                     if response is not None:
+                        response = self.message_protocol.to_str(response)
                         await websocket.send(json.dumps(response))
                 else:
                     await websocket.send(self.on_not_found(data, path, client.id))

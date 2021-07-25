@@ -3,7 +3,6 @@ import subprocess
 import sys
 import importlib
 from contextlib import contextmanager
-from typing import List
 
 from setuptools import setup
 
