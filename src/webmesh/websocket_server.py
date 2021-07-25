@@ -5,12 +5,13 @@ import json
 import logging
 import signal
 import platform
+import traceback
 import uuid
 from multiprocessing.pool import ThreadPool
+from time import sleep
 
 import websockets
-from websockets import WebSocketServerProtocol
-from websockets.exceptions import WebSocketException
+from websockets import WebSocketServerProtocol, WebSocketException
 
 from webmesh.message_protocols import AbstractMessageProtocol, SimpleDictProtocol
 from webmesh.message_serializers import AbstractMessageSerializer, MessagePackSerializer
@@ -56,7 +57,7 @@ class WebMeshServer:
             return run
         return wrapper
 
-    def find_and_run(self, websocket, message, client):
+    def find_and_run(self, message, client):
         deserialized_message = self.message_serializer.deserialize(message)
         m_path, data = self.message_protocol.unpack(deserialized_message)
 
@@ -70,8 +71,6 @@ class WebMeshServer:
             packed_response = self.message_protocol.pack(response)
             serialized_response = self.message_serializer.serialize(packed_response)
             return serialized_response
-        else:
-            return None
 
     def on_not_found(self, payload, path, client):
         return json.dumps('Path not found')
@@ -93,13 +92,16 @@ class WebMeshServer:
     def on_disconnect(self, client: WebMeshConnection):
         client.logger.info(f'Disconnected.')
 
-    async def handler(self, websocket, path):
+    async def handler(self, websocket: WebSocketServerProtocol, path):
         client = self._on_connect(websocket)
         try:
+            def _sync_send(message):
+                if message is not None:
+                    loop = websocket.loop
+                    asyncio.run_coroutine_threadsafe(websocket.send(message), loop)
+
             async for message in websocket:
-                response = self.thread_pool.apply(self.find_and_run, args=[websocket, message, client])
-                if response is not None:
-                    await websocket.send(response)
+                self.thread_pool.apply_async(self.find_and_run, args=[message, client], callback=_sync_send)
         except WebSocketException:
             # traceback.print_exc()
             pass
