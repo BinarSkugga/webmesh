@@ -11,7 +11,7 @@ Execute all the session at the root of the project: `nox`
 Simply execute: `pip install webmesh`
 
 
-## How to use
+## WebMesh Server
 WebMesh's server works like a standard HTTP server. It uses a declarative syntax with decorators defining callbacks on routes. Here's the basic example for a locally accessible echo server:
 
 ```python
