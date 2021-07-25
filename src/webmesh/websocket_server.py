@@ -5,6 +5,7 @@ import json
 import logging
 import signal
 import platform
+import traceback
 import uuid
 from multiprocessing.pool import ThreadPool
 
@@ -13,7 +14,7 @@ from websockets import WebSocketServerProtocol
 from websockets.exceptions import WebSocketException
 
 from webmesh.message_protocols import AbstractMessageProtocol, SimpleDictProtocol
-from webmesh.message_serializers import AbstractMessageSerializer, StandardJsonSerializer
+from webmesh.message_serializers import AbstractMessageSerializer, StandardJsonSerializer, MessagePackSerializer
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -94,6 +95,7 @@ class WebMeshServer:
                 else:
                     await websocket.send(self.on_not_found(data, m_path, client.id))
         except WebSocketException:
+            # traceback.print_exc()
             pass
         finally:
             self._on_disconnect(client)
@@ -117,7 +119,7 @@ class WebMeshServer:
         loop.run_until_complete(self.run(stop))
 
 
-server = WebMeshServer()
+server = WebMeshServer(message_serializer=MessagePackSerializer())
 
 
 @server.on('/')
