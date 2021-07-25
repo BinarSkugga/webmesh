@@ -17,7 +17,7 @@ from webmesh.message_serializers import AbstractMessageSerializer, MessagePackSe
 
 
 @dataclasses.dataclass
-class WebMeshClient:
+class WebMeshConnection:
     id: str
     socket: WebSocketServerProtocol
     logger: logging.Logger
@@ -48,49 +48,58 @@ class WebMeshServer:
     def on(self, path):
         def wrapper(func):
             @functools.wraps(func)
-            def run(message, path, id):
-                return func(message, path, id)
+            def run(message, path, client):
+                client.logger.debug(f'Message received on {path}: {message}')
+                return func(message, path, client)
 
             self.consumers[path] = run
             return run
         return wrapper
 
-    def on_not_found(self, payload, path, id):
+    def find_and_run(self, websocket, message, client):
+        deserialized_message = self.message_serializer.deserialize(message)
+        m_path, data = self.message_protocol.unpack(deserialized_message)
+
+        if m_path in self.consumers:
+            consumer = self.consumers[m_path]
+            response = consumer(data, m_path, client)
+        else:
+            response = self.on_not_found(data, m_path, client)
+
+        if response is not None:
+            packed_response = self.message_protocol.pack(response)
+            serialized_response = self.message_serializer.serialize(packed_response)
+            return serialized_response
+        else:
+            return None
+
+    def on_not_found(self, payload, path, client):
         return json.dumps('Path not found')
 
     def _on_connect(self, websocket):
         id = uuid.uuid4().hex
-        self.clients[id] = WebMeshClient(id, websocket, logging.getLogger(f'webmesh.client.{id}'))
+        self.clients[id] = WebMeshConnection(id, websocket, logging.getLogger(f'webmesh.connection.{id}'))
         self.on_connect(self.clients[id])
         return self.clients[id]
 
-    def on_connect(self, client: WebMeshClient):
+    def on_connect(self, client: WebMeshConnection):
         client.logger.info(f'Connected.')
 
-    def _on_disconnect(self, client: WebMeshClient):
+    def _on_disconnect(self, client: WebMeshConnection):
         self.on_disconnect(client)
         del self.clients[client.id]
         return id
 
-    def on_disconnect(self, client: WebMeshClient):
+    def on_disconnect(self, client: WebMeshConnection):
         client.logger.info(f'Disconnected.')
 
     async def handler(self, websocket, path):
         client = self._on_connect(websocket)
         try:
             async for message in websocket:
-                deserialized_message = self.message_serializer.deserialize(message)
-                m_path, data = self.message_protocol.unpack(deserialized_message)
-                client.logger.debug(f'Message received on {m_path}: {data}')
-                if m_path in self.consumers:
-                    consumer = self.consumers[m_path]
-                    response = self.thread_pool.apply(consumer, args=[data, m_path, client.id])
-                    if response is not None:
-                        packed_response = self.message_protocol.pack(response)
-                        serialized_response = self.message_serializer.serialize(packed_response)
-                        await websocket.send(serialized_response)
-                else:
-                    await websocket.send(self.on_not_found(data, m_path, client.id))
+                response = self.thread_pool.apply(self.find_and_run, args=[websocket, message, client])
+                if response is not None:
+                    await websocket.send(response)
         except WebSocketException:
             # traceback.print_exc()
             pass
@@ -100,7 +109,9 @@ class WebMeshServer:
     async def run(self, stop):
         async with websockets.serve(self.handler, self.host, self.port) as ws_server:
             self.server = ws_server
+            self.logger.info('WebMesh server started.')
             await stop
+            self.logger.info('WebMesh server stopped.')
 
     def start(self):
         try:
@@ -117,18 +128,21 @@ class WebMeshServer:
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s, %(name)s, %(asctime)s]'
+                                                    '[%(threadName)s]'
+                                                    '[%(filename)s:%(funcName)s:%(lineno)d]:'
+                                                    ' %(message)s')
     server = WebMeshServer()
 
 
     @server.on('/')
-    def echo(payload, path, id):
+    def echo(payload, path, client: WebMeshConnection):
         return payload
 
 
     @server.on('/id')
-    def id(payload, path, id):
-        return id
+    def id(payload, path, client: WebMeshConnection):
+        return client.id
 
 
     server.start()
