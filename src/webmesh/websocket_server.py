@@ -17,13 +17,13 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 @dataclasses.dataclass
-class WSClient:
+class WebMeshClient:
     id: str
     socket: WebSocketServerProtocol
     logger: logging.Logger
 
 
-class WSServer:
+class WebMeshServer:
     def __init__(self, host: str = '0.0.0.0', port: int = 4269, debug: bool = False):
         self.host = host
         self.port = port
@@ -53,19 +53,19 @@ class WSServer:
 
     def _on_connect(self, websocket):
         id = uuid.uuid4().hex
-        self.clients[id] = WSClient(id, websocket, logging.getLogger(f'webmesh.client.{id}'))
+        self.clients[id] = WebMeshClient(id, websocket, logging.getLogger(f'webmesh.client.{id}'))
         self.on_connect(self.clients[id])
         return self.clients[id]
 
-    def on_connect(self, client: WSClient):
+    def on_connect(self, client: WebMeshClient):
         client.logger.info(f'Connected.')
 
-    def _on_disconnect(self, client: WSClient):
+    def _on_disconnect(self, client: WebMeshClient):
         self.on_disconnect(client)
         del self.clients[client.id]
         return id
 
-    def on_disconnect(self, client: WSClient):
+    def on_disconnect(self, client: WebMeshClient):
         client.logger.info(f'Disconnected.')
 
     async def handler(self, websocket, path):
@@ -107,7 +107,7 @@ class WSServer:
         loop.run_until_complete(self.run(stop))
 
 
-server = WSServer()
+server = WebMeshServer()
 
 
 @server.on('/')
