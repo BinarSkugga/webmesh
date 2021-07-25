@@ -5,7 +5,6 @@ import json
 import logging
 import signal
 import platform
-import traceback
 import uuid
 from multiprocessing.pool import ThreadPool
 
@@ -30,7 +29,7 @@ class WebMeshServer:
     def __init__(self,
                  host: str = '0.0.0.0', port: int = 4269,
                  debug: bool = False,
-                 message_serializer: AbstractMessageSerializer = StandardJsonSerializer(),
+                 message_serializer: AbstractMessageSerializer = MessagePackSerializer(),
                  message_protocol: AbstractMessageProtocol = SimpleDictProtocol()
                  ):
         self.host = host
@@ -119,7 +118,7 @@ class WebMeshServer:
         loop.run_until_complete(self.run(stop))
 
 
-server = WebMeshServer(message_serializer=MessagePackSerializer())
+server = WebMeshServer()
 
 
 @server.on('/')
