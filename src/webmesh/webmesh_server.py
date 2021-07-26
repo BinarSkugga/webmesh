@@ -33,8 +33,8 @@ class WebMeshServer(WebMeshComponent):
         self.server = None
         self.consumers = {}
         self.clients = {}
-        self.thread_pool = ThreadPool(processes=thread_count)
         self.logger = logging.getLogger('webmesh.server')
+        self.thread_pool = ThreadPool(processes=thread_count)
 
         if not self.debug:
             logging.getLogger('websockets.server').disabled = True

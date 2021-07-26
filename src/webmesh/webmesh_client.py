@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from multiprocessing.pool import ThreadPool
 from typing import Any
@@ -52,5 +53,9 @@ class WebMeshClient(WebMeshComponent):
             self.started.set()
             self.logger.info(f'Connected to ws://{self.host}:{self.port}')
 
-            await self.stop.wait()
+            while not self.stop.is_set():
+                if client.closed:
+                    raise OSError
+                else:
+                    await asyncio.sleep(1)
             self.logger.info('Disconnected.')

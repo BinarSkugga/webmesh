@@ -5,6 +5,8 @@ from time import sleep
 
 def test_emit_endpoint(server, client):
     client.emit('/inc', None)
+    sleep(0.1)
+
     assert client.call('/getinc', None) == 1
 
 
@@ -20,7 +22,7 @@ def test_call_async(server, client):
         event.set()
 
     client.call_async('/echo', 5, _cb)
-    sleep(1)
+    sleep(0.1)
 
     assert event.is_set()
 

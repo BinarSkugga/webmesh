@@ -44,14 +44,13 @@ def server():
 
     try:
         server.start(threaded=True)
-        server.await_started()
         yield server
     finally:
         server.close()
 
 
-@pytest.fixture
-def client(server):
+@pytest.fixture(scope='module')
+def client():
     client = WebMeshClient()
     try:
         client.start(threaded=True)
@@ -62,7 +61,7 @@ def client(server):
 
 
 @pytest.fixture
-def client1(server):
+def client1():
     client = WebMeshClient()
     try:
         client.start(threaded=True)
@@ -73,7 +72,7 @@ def client1(server):
 
 
 @pytest.fixture
-def client2(server):
+def client2():
     client = WebMeshClient()
     try:
         client.start(threaded=True)
