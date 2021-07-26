@@ -7,6 +7,8 @@ import signal
 import platform
 import uuid
 from multiprocessing.pool import ThreadPool
+from threading import Thread, Event
+from time import sleep
 
 import websockets
 from websockets import WebSocketServerProtocol, WebSocketException
@@ -32,6 +34,7 @@ class WebMeshServer:
         self.host = host
         self.port = port
         self.server = None
+        self.stop = None
         self.message_serializer = message_serializer
         self.message_protocol = message_protocol
         self.consumers = {}
@@ -43,6 +46,8 @@ class WebMeshServer:
             logging.getLogger('websockets.server').disabled = True
             logging.getLogger('websockets.protocol').disabled = True
             logging.getLogger('asyncio').disabled = True
+
+    # CORE METHODS ======================================================================
 
     def on(self, path):
         def wrapper(func):
@@ -70,26 +75,6 @@ class WebMeshServer:
             serialized_response = self.message_serializer.serialize(packed_response)
             return serialized_response
 
-    def on_not_found(self, payload, path, client):
-        return json.dumps('Path not found')
-
-    def _on_connect(self, websocket):
-        id = uuid.uuid4().hex
-        self.clients[id] = WebMeshConnection(id, websocket, logging.getLogger(f'webmesh.connection.{id}'))
-        self.on_connect(self.clients[id])
-        return self.clients[id]
-
-    def on_connect(self, client: WebMeshConnection):
-        client.logger.info(f'Connected.')
-
-    def _on_disconnect(self, client: WebMeshConnection):
-        self.on_disconnect(client)
-        del self.clients[client.id]
-        return id
-
-    def on_disconnect(self, client: WebMeshConnection):
-        client.logger.info(f'Disconnected.')
-
     async def handler(self, websocket: WebSocketServerProtocol, path):
         client = self._on_connect(websocket)
         try:
@@ -106,25 +91,52 @@ class WebMeshServer:
         finally:
             self._on_disconnect(client)
 
-    async def run(self, stop):
+    async def run(self):
+        self.stop = asyncio.Event()
         async with websockets.serve(self.handler, self.host, self.port) as ws_server:
             self.server = ws_server
             self.logger.info('WebMesh server started.')
-            await stop
+
+            await self.stop.wait()
             self.logger.info('WebMesh server stopped.')
 
-    def start(self):
+    def _start(self):
         try:
+            asyncio.run(self.run())
+        except RuntimeError as e:
             loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
+            loop.run_until_complete(self.run())
 
-        stop = loop.create_future()
-        if platform.system == 'Linux':
-            loop.add_signal_handler(signal.SIGINT, stop.set_result, None)
-            loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
+    def start(self, threaded: bool = False):
+        if threaded:
+            Thread(target=self._start).start()
+        else:
+            self._start()
 
-        loop.run_until_complete(self.run(stop))
+    def close(self):
+        self.stop.set()
+
+    # CALLBACKS ======================================================================
+
+    def _on_connect(self, websocket):
+        id = uuid.uuid4().hex
+        self.clients[id] = WebMeshConnection(id, websocket, logging.getLogger(f'webmesh.{id}'))
+        self.on_connect(self.clients[id])
+        return self.clients[id]
+
+    def _on_disconnect(self, client: WebMeshConnection):
+        self.on_disconnect(client)
+        del self.clients[client.id]
+        return id
+
+    def on_connect(self, client: WebMeshConnection):
+        client.logger.info(f'Connected.')
+
+    def on_disconnect(self, client: WebMeshConnection):
+        client.logger.info(f'Disconnected.')
+
+    def on_not_found(self, payload, path, client):
+        return json.dumps('Path not found')
 
 
 if __name__ == '__main__':
@@ -132,7 +144,7 @@ if __name__ == '__main__':
                                                     '[%(threadName)s]'
                                                     '[%(filename)s:%(funcName)s:%(lineno)d]:'
                                                     ' %(message)s')
-    server = WebMeshServer(message_serializer=StandardJsonSerializer())
+    server = WebMeshServer()
 
 
     @server.on('/')
@@ -142,7 +154,9 @@ if __name__ == '__main__':
 
     @server.on('/id')
     def id(payload, path, client: WebMeshConnection):
+        sleep(1)
         return client.id
 
 
-    server.start()
+    server.start(threaded=True)
+    Event().wait()
