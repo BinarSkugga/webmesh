@@ -1,6 +1,12 @@
 # WebMesh
 ![Deploy](https://github.com/binarskugga/webmesh/actions/workflows/python-publish.yml/badge.svg)
 
+## Todo before first release
+- [ ] Add SSL Support
+- [ ] Improve Failure Resilience (retrying connections etc..)
+- [ ] Implement a Subscription System
+- [ ] Implement a class that regroups a server and multiple clients to each peers (WebMesh(server, *peers) ?)
+
 ## Tests & Lint
 Install nox: `pip install nox`
 
