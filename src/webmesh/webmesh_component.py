@@ -4,9 +4,19 @@ from abc import ABC, abstractmethod
 from asyncio import Event
 from threading import Thread
 
+from webmesh.message_protocols import AbstractMessageProtocol, SimpleDictProtocol
+from webmesh.message_serializers import AbstractMessageSerializer, MessagePackSerializer
+
 
 class WebMeshComponent(ABC):
-    def __init__(self):
+    def __init__(self, host: str = '127.0.0.1', port: int = 4269,
+                 message_serializer: AbstractMessageSerializer = MessagePackSerializer(),
+                 message_protocol: AbstractMessageProtocol = SimpleDictProtocol()):
+        self.host = host
+        self.port = port
+        self.message_serializer = message_serializer
+        self.message_protocol = message_protocol
+
         self.stop = None
         self.started = threading.Event()
 

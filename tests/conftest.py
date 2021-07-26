@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s, %(name)s, %(asc
                                                 ' %(message)s')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def server():
     server = WebMeshServer()
 
@@ -24,9 +24,22 @@ def server():
     def id(payload, path, client: WebMeshConnection):
         return client.id
 
-    @server.on('/5sec')
-    def sec5(payload, path, client: WebMeshConnection):
-        sleep(5)
+    @server.on('/inc')
+    def inc(payload, path, client: WebMeshConnection):
+        if not hasattr(client, 'counter'):
+            setattr(client, 'counter', 0)
+        client.counter += 1
+
+    @server.on('/getinc')
+    def getinc(payload, path, client: WebMeshConnection):
+        if hasattr(client, 'counter'):
+            return client.counter
+        else:
+            return 0
+
+    @server.on('/3sec')
+    def sec3(payload, path, client: WebMeshConnection):
+        sleep(3)
         return client.id
 
     try:
@@ -39,6 +52,28 @@ def server():
 
 @pytest.fixture
 def client(server):
+    client = WebMeshClient()
+    try:
+        client.start(threaded=True)
+        client.await_started()
+        yield client
+    finally:
+        client.close()
+
+
+@pytest.fixture
+def client1(server):
+    client = WebMeshClient()
+    try:
+        client.start(threaded=True)
+        client.await_started()
+        yield client
+    finally:
+        client.close()
+
+
+@pytest.fixture
+def client2(server):
     client = WebMeshClient()
     try:
         client.start(threaded=True)

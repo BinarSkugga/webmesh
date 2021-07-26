@@ -9,7 +9,7 @@ from websockets import WebSocketServerProtocol, WebSocketException
 
 from webmesh.message_protocols import AbstractMessageProtocol, SimpleDictProtocol
 from webmesh.message_serializers import AbstractMessageSerializer, MessagePackSerializer
-from webmesh.utils import sync_send
+from webmesh.utils import blocking_send
 from webmesh.webmesh_component import WebMeshComponent
 
 
@@ -23,21 +23,17 @@ class WebMeshConnection:
 class WebMeshServer(WebMeshComponent):
     def __init__(self,
                  host: str = '0.0.0.0', port: int = 4269,
-                 debug: bool = False,
+                 debug: bool = False, thread_count: int = 5,
                  message_serializer: AbstractMessageSerializer = MessagePackSerializer(),
                  message_protocol: AbstractMessageProtocol = SimpleDictProtocol()
                  ):
-        super().__init__()
+        super().__init__(host, port, message_serializer, message_protocol)
 
-        self.host = host
-        self.port = port
         self.debug = debug
         self.server = None
-        self.message_serializer = message_serializer
-        self.message_protocol = message_protocol
         self.consumers = {}
         self.clients = {}
-        self.thread_pool = ThreadPool()
+        self.thread_pool = ThreadPool(processes=thread_count)
         self.logger = logging.getLogger('webmesh.server')
 
         if not self.debug:
@@ -78,7 +74,7 @@ class WebMeshServer(WebMeshComponent):
     async def handler(self, websocket: WebSocketServerProtocol, path):
         client = self._on_connect(websocket)
         try:
-            response_func = functools.partial(sync_send, websocket)
+            response_func = functools.partial(blocking_send, websocket)
             async for message in websocket:
                 self.thread_pool.apply_async(self.find_and_run, args=[message, client],
                                              callback=response_func, error_callback=self.logger.error)

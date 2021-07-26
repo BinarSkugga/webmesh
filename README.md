@@ -23,7 +23,12 @@ server = WebMeshServer()
 def echo(payload, path, client: WebMeshConnection):
     return payload
 
-server.start()
+server.start(threaded=True)
+server.await_started()
+
+# Server is ready and running in its own thread
+
+server.close()
 ```
 
 This is all good and pretty but by default, WebMesh uses [msgpack](https://github.com/msgpack/msgpack-python) and zlib to communicate which makes it hard to manually use. You can change the serialization layer by providing an implementation of the `AbstractMessageSerializer` class. WebMesh provides a simple JSON serializer that you can pass into your server's constructor:
@@ -33,4 +38,19 @@ from webmesh.webmesh_server import WebMeshServer
 from webmesh.message_serializers import StandardJsonSerializer
 
 server = WebMeshServer(message_serializer=StandardJsonSerializer())
+```
+
+## WebMesh Client
+WebMesh's client wraps the connection from websockets and allow you to emit and call using both a blocking and non-blocking. This client doesn't execute anything on the main thread. Here's a basic example:
+
+```python
+from webmesh.webmesh_client import WebMeshClient
+
+client = WebMeshClient()
+client.start(threaded=True)
+client.await_started()
+
+# Client is ready and running in its own thread
+
+client.close()
 ```
