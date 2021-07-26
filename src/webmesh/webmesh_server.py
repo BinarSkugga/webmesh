@@ -1,16 +1,16 @@
-import asyncio
 import dataclasses
 import functools
 import logging
 import uuid
 from multiprocessing.pool import ThreadPool
-from threading import Thread
 
 import websockets
 from websockets import WebSocketServerProtocol, WebSocketException
 
 from webmesh.message_protocols import AbstractMessageProtocol, SimpleDictProtocol
 from webmesh.message_serializers import AbstractMessageSerializer, MessagePackSerializer
+from webmesh.utils import sync_send
+from webmesh.webmesh_component import WebMeshComponent
 
 
 @dataclasses.dataclass
@@ -20,17 +20,19 @@ class WebMeshConnection:
     logger: logging.Logger
 
 
-class WebMeshServer:
+class WebMeshServer(WebMeshComponent):
     def __init__(self,
                  host: str = '0.0.0.0', port: int = 4269,
                  debug: bool = False,
                  message_serializer: AbstractMessageSerializer = MessagePackSerializer(),
                  message_protocol: AbstractMessageProtocol = SimpleDictProtocol()
                  ):
+        super().__init__()
+
         self.host = host
         self.port = port
+        self.debug = debug
         self.server = None
-        self.stop = None
         self.message_serializer = message_serializer
         self.message_protocol = message_protocol
         self.consumers = {}
@@ -38,7 +40,7 @@ class WebMeshServer:
         self.thread_pool = ThreadPool()
         self.logger = logging.getLogger('webmesh.server')
 
-        if not debug:
+        if not self.debug:
             logging.getLogger('websockets.server').disabled = True
             logging.getLogger('websockets.protocol').disabled = True
             logging.getLogger('asyncio').disabled = True
@@ -67,50 +69,34 @@ class WebMeshServer:
             response = self.on_not_found(data, m_path, client)
 
         if response is not None:
-            packed_response = self.message_protocol.pack(response)
+            packed_response = self.message_protocol.pack(m_path, response)
+            client.logger.debug(f'Answered request to {m_path}: {packed_response}')
+
             serialized_response = self.message_serializer.serialize(packed_response)
             return serialized_response
 
     async def handler(self, websocket: WebSocketServerProtocol, path):
         client = self._on_connect(websocket)
         try:
-            def _sync_send(message):
-                if message is not None:
-                    loop = websocket.loop
-                    asyncio.run_coroutine_threadsafe(websocket.send(message), loop)
-
+            response_func = functools.partial(sync_send, websocket)
             async for message in websocket:
-                self.thread_pool.apply_async(self.find_and_run, args=[message, client], callback=_sync_send)
-        except WebSocketException:
-            # traceback.print_exc()
-            pass
+                self.thread_pool.apply_async(self.find_and_run, args=[message, client],
+                                             callback=response_func, error_callback=self.logger.error)
+        except WebSocketException as e:
+            if self.debug:
+                self.logger.error(e)
         finally:
             self._on_disconnect(client)
 
     async def run(self):
-        self.stop = asyncio.Event()
+        await super().run()
         async with websockets.serve(self.handler, self.host, self.port) as ws_server:
             self.server = ws_server
+            self.started.set()
             self.logger.info('WebMesh server started.')
 
             await self.stop.wait()
             self.logger.info('WebMesh server stopped.')
-
-    def _start(self):
-        try:
-            asyncio.run(self.run())
-        except RuntimeError:
-            loop = asyncio.get_running_loop()
-            loop.run_until_complete(self.run())
-
-    def start(self, threaded: bool = False):
-        if threaded:
-            Thread(target=self._start, daemon=True).start()
-        else:
-            self._start()
-
-    def close(self):
-        self.stop.set()
 
     # CALLBACKS ======================================================================
 

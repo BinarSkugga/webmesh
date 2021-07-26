@@ -17,5 +17,7 @@ def test(session: Session):
     # Adds src to the pythonpath
     sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)) + os.sep + 'src')
 
+    session.run('python', 'setup.py', 'install')
     session.install('pytest')
+
     session.run('pytest', 'tests', env={'PYTHONPATH': os.pathsep.join(sys.path)})

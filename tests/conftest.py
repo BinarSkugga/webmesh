@@ -3,6 +3,7 @@ from time import sleep
 
 import pytest
 
+from webmesh.webmesh_client import WebMeshClient
 from webmesh.webmesh_server import WebMeshServer, WebMeshConnection
 
 logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s, %(name)s, %(asctime)s]'
@@ -30,6 +31,18 @@ def server():
 
     try:
         server.start(threaded=True)
+        server.await_started()
         yield server
     finally:
         server.close()
+
+
+@pytest.fixture
+def client(server):
+    client = WebMeshClient()
+    try:
+        client.start(threaded=True)
+        client.await_started()
+        yield client
+    finally:
+        client.close()
