@@ -39,7 +39,3 @@ class MessagePackSerializer(AbstractMessageSerializer):
         if self.compressor is not None:
             bytes_data = self.compressor.decompress(bytes_data)
         return msgpack.loads(bytes_data)
-
-
-print(MessagePackSerializer().serialize({'path': '/id'}))
-print(MessagePackSerializer().deserialize('789cbba9606e619e966a6c996698946a6c629a929294666660686c916669696c69696a980400b48509a8'))
