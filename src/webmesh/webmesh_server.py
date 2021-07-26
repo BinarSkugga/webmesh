@@ -4,8 +4,7 @@ import functools
 import logging
 import uuid
 from multiprocessing.pool import ThreadPool
-from threading import Thread, Event
-from time import sleep
+from threading import Thread
 
 import websockets
 from websockets import WebSocketServerProtocol, WebSocketException
