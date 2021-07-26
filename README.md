@@ -61,4 +61,4 @@ client.await_started()
 client.close()
 ```
 
-WebMesh clients use the same process as the server to serialize and pack messages. You can override how this happens by providing a different implementation of `AbstractMessageSerializer` or `AbstractMessageProtocol`. **Make sure the server and clients use the same Serializer and Protocol or equivalent implementations.**
+WebMesh clients use the same process as the server to serialize and pack messages. You can override how this happens by providing a different implementation of `AbstractMessageSerializer` or `AbstractMessageProtocol` to the constructor. **Make sure the server and clients use the same Serializer and Protocol or equivalent implementations.**
