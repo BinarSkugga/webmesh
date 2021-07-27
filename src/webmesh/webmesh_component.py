@@ -24,30 +24,37 @@ class WebMeshComponent(ABC):
         self.started = None
         self.logger: Optional[Logger] = None
 
+    async def _run(self):
+        self.stop = Event()
+        await self.run()
+
     @abstractmethod
     async def run(self):
-        self.stop = Event()
+        pass
 
     def _start(self):
         while self.stop is None or not self.stop.is_set():
             min_backoff = 1
             max_backoff = 16
             current_backoff = min_backoff
-            self.started = threading.Event()
 
-            while not self.started.is_set():
+            while not self.started.is_set() and (self.stop is None or not self.stop.is_set()):
                 try:
-                    asyncio.run(self.run())
+                    asyncio.run(self._run())
                 except RuntimeError:
                     loop = asyncio.get_running_loop()
-                    loop.run_until_complete(self.run())
+                    loop.run_until_complete(self._run())
                 except OSError:
+                    self.started = threading.Event()
                     self.logger.warning(f'Failed to sustain connection, reattempting connection in {current_backoff}s...')
 
                 time.sleep(current_backoff)
                 current_backoff = min(current_backoff*2, max_backoff)
 
     def start(self, threaded: bool = False):
+        self.stop = threading.Event()
+        self.started = threading.Event()
+
         if threaded:
             Thread(target=self._start, daemon=True).start()
         else:

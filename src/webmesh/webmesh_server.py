@@ -85,7 +85,6 @@ class WebMeshServer(WebMeshComponent):
             self._on_disconnect(client)
 
     async def run(self):
-        await super().run()
         async with websockets.serve(self.handler, self.host, self.port) as ws_server:
             self.server = ws_server
             self.started.set()

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from multiprocessing.pool import ThreadPool
+from threading import Event
 from typing import Any
 
 import websockets
@@ -47,7 +48,6 @@ class WebMeshClient(WebMeshComponent):
         return self.thread_pool.apply_async(self._call, args=[target, data], callback=callback)
 
     async def run(self):
-        await super().run()
         async with websockets.connect(f'ws://{self.host}:{self.port}') as client:
             self.client = client
             self.started.set()
@@ -59,3 +59,15 @@ class WebMeshClient(WebMeshComponent):
                 else:
                     await asyncio.sleep(1)
             self.logger.info('Disconnected.')
+
+
+if __name__ == '__main__':
+    client = WebMeshClient()
+    client.start(threaded=True)
+    client.await_started()
+
+    print('started')
+    client.emit('hello', 'blop')
+
+    client.close()
+

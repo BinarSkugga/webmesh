@@ -43,9 +43,7 @@ def test_connection_lost():
     client.await_started()
 
     server.close()  # Disrupt connection
-
-    asyncio.sleep(10)
-    time.sleep(10)
+    time.sleep(20)
 
     server.start(threaded=True)
     server.await_started()
