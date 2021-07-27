@@ -17,7 +17,7 @@ Execute all the session at the root of the project: `nox`
 Simply execute: `pip install webmesh`
 
 
-# WebSocket Implementation
+## WebSocket Implementation
 [TODO]
 
 
