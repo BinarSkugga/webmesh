@@ -37,6 +37,7 @@ class WebSocketServer(ABC):
                  ):
         self.logger = logging.getLogger('websocket.server')
         self.close_event = threading.Event()
+        self.started_event = threading.Event()
         self.handler = handler
         self.serializer_type = serializer_type
         self.protocol_type = protocol_type
@@ -51,6 +52,9 @@ class WebSocketServer(ABC):
 
     def close(self, sig=None, frame=None):
         self.close_event.set()
+
+    def await_started(self, timeout=None):
+        self.started_event.wait(timeout)
 
     def _listen(self, host: str, port: int):
         with Pool(processes=self.max_parallelism) as pool:
@@ -69,6 +73,7 @@ class WebSocketServer(ABC):
                 _connection_closed = partial(_connection_closed, self)
 
                 self.logger.info(f'Listening on ws://{host}:{port}...')
+                self.started_event.set()
                 while not self.close_event.is_set():
                     try:
                         conn, addr = self.socket.accept()
