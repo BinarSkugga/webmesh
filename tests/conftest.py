@@ -3,8 +3,8 @@ from time import sleep
 
 import pytest
 
-from webmesh.webmesh_client import WebMeshClient
-from webmesh.webmesh_server import WebMeshServer, WebMeshConnection
+from webmesh.webmesh_server import WebMeshServer
+from webmesh.websocket.websocket_connection import WebSocketConnection
 
 logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s, %(name)s, %(asctime)s]'
                                                 '[%(threadName)s]'
@@ -17,67 +17,33 @@ def server():
     server = WebMeshServer()
 
     @server.on('/echo')
-    def echo(payload, path, client: WebMeshConnection):
+    def echo(payload, path, connection: WebSocketConnection):
         return payload
 
     @server.on('/id')
-    def id(payload, path, client: WebMeshConnection):
-        return client.id
+    def id(payload, path, connection: WebSocketConnection):
+        return connection.id
 
     @server.on('/inc')
-    def inc(payload, path, client: WebMeshConnection):
-        if not hasattr(client, 'counter'):
-            setattr(client, 'counter', 0)
-        client.counter += 1
+    def inc(payload, path, connection: WebSocketConnection):
+        if not hasattr(connection, 'counter'):
+            setattr(connection, 'counter', 0)
+        connection.counter += 1
 
     @server.on('/getinc')
-    def getinc(payload, path, client: WebMeshConnection):
-        if hasattr(client, 'counter'):
-            return client.counter
+    def getinc(payload, path, connection: WebSocketConnection):
+        if hasattr(connection, 'counter'):
+            return connection.counter
         else:
             return 0
 
     @server.on('/3sec')
-    def sec3(payload, path, client: WebMeshConnection):
+    def sec3(payload, path, connection: WebSocketConnection):
         sleep(3)
-        return client.id
+        return connection.id
 
     try:
-        server.start(threaded=True)
-        server.await_started()
+        server.listen()
         yield server
     finally:
         server.close()
-
-
-@pytest.fixture
-def client(server):
-    client = WebMeshClient()
-    try:
-        client.start(threaded=True)
-        client.await_started()
-        yield client
-    finally:
-        client.close()
-
-
-@pytest.fixture
-def client1(server):
-    client = WebMeshClient()
-    try:
-        client.start(threaded=True)
-        client.await_started()
-        yield client
-    finally:
-        client.close()
-
-
-@pytest.fixture
-def client2(server):
-    client = WebMeshClient()
-    try:
-        client.start(threaded=True)
-        client.await_started()
-        yield client
-    finally:
-        client.close()
