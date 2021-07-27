@@ -25,8 +25,8 @@ class StandardJsonSerializer(AbstractMessageSerializer):
 
 
 class MessagePackSerializer(AbstractMessageSerializer):
-    def __init__(self, compressor=zlib):
-        self.compressor = compressor
+    def __init__(self):
+        self.compressor = zlib
 
     def serialize(self, obj: Any) -> str:
         msg_bytes = msgpack.dumps(obj)
