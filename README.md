@@ -53,4 +53,4 @@ from webmesh.message_serializers import StandardJsonSerializer
 server = WebMeshServer(serializer_type=StandardJsonSerializer)
 ```
 
-**Note that we are using the class and not an instance. This is because the websocket backend uses processes for parallelism. This limits us as to what we can use because it requires to be pickled. By passing the class, we can instantiate the serializer inside the process and have more flexibility.**
+*Note: We are using the class and not an instance. This is because the websocket backend uses processes for parallelism. This limits us as to what we can use because it requires to be pickled. By passing the class, we can instantiate the serializer inside the process and have more flexibility.*
