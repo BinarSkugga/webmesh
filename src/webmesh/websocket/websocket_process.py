@@ -3,9 +3,9 @@ import signal
 import socket
 import threading
 import traceback
-from abc import ABC
+import typing
 from io import StringIO, BytesIO
-from typing import Type, Optional, Union, Any
+from typing import Type, Optional, Union
 
 from wsproto import ConnectionType, WSConnection
 from wsproto.events import Ping, Request, AcceptConnection, CloseConnection, TextMessage, \
@@ -16,19 +16,12 @@ from webmesh.message_serializers import AbstractMessageSerializer
 from webmesh.websocket.websocket_connection import WebSocketConnection
 
 
-class AbstractWebSocketHandler(ABC):
-    def on_connect(self, connection: WebSocketConnection):
-        pass
-
-    def on_message(self, connection: WebSocketConnection, path: str, data: Any) -> Optional[Any]:
-        pass
-
-    def on_disconnect(self, connection: WebSocketConnection):
-        pass
+if typing.TYPE_CHECKING:
+    from webmesh.websocket.websocket_server import AbstractWebSocketHandler
 
 
 class WebSocketClientProcess:
-    def __init__(self, handler: AbstractWebSocketHandler, connection: WebSocketConnection,
+    def __init__(self, handler: 'AbstractWebSocketHandler', connection: WebSocketConnection,
                  read_buffer_size: int,
                  serializer_type: Type[AbstractMessageSerializer],
                  protocol_type: Type[AbstractMessageProtocol]):

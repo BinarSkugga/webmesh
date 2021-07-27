@@ -6,12 +6,23 @@ import uuid
 from abc import ABC
 from functools import partial
 from multiprocessing import Pool
-from typing import Dict, Type
+from typing import Dict, Type, Any, Optional
 
 from webmesh.message_protocols import AbstractMessageProtocol
 from webmesh.message_serializers import AbstractMessageSerializer
 from webmesh.websocket.websocket_connection import WebSocketConnection
-from webmesh.websocket.websocket_process import WebSocketClientProcess, AbstractWebSocketHandler
+from webmesh.websocket.websocket_process import WebSocketClientProcess
+
+
+class AbstractWebSocketHandler(ABC):
+    def on_connect(self, connection: WebSocketConnection):
+        pass
+
+    def on_message(self, connection: WebSocketConnection, path: str, data: Any) -> Optional[Any]:
+        pass
+
+    def on_disconnect(self, connection: WebSocketConnection):
+        pass
 
 
 class WebSocketServer(ABC):

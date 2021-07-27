@@ -5,8 +5,7 @@ from typing import Any, Optional, Type
 from webmesh.message_protocols import AbstractMessageProtocol, SimpleDictProtocol
 from webmesh.message_serializers import MessagePackSerializer, AbstractMessageSerializer
 from webmesh.websocket.websocket_connection import WebSocketConnection
-from webmesh.websocket.websocket_process import AbstractWebSocketHandler
-from webmesh.websocket.websocket_server import WebSocketServer
+from webmesh.websocket.websocket_server import WebSocketServer, AbstractWebSocketHandler
 
 
 class WebMeshHandler(AbstractWebSocketHandler):
