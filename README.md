@@ -1,10 +1,19 @@
 # WebMesh
 ![Deploy](https://github.com/binarskugga/webmesh/actions/workflows/python-publish.yml/badge.svg)
 
+WebMesh is a specialised WebSocket sub-protocol to connect multiple microservices. It uses a custom WebSocket server based on [wsproto](https://github.com/python-hyper/wsproto) that uses python processes to achieve high parallelism and performance. It aims at providing the building blocks to inter-connect multiple services and leverage the power of containers and cloud infrastructures (corporate lorem ipsum ends here).
+
+## Design
+
+[TODO]
+
 ## Todo before first release
 - [ ] Add SSL Support
-- [ ] Improve Failure Resilience (retrying connections etc..)
+- [X] Improve Failure Resilience (retrying connections etc..)
+- [ ] Path arguments and resolution for consumers
 - [ ] Implement a Subscription System
+- [ ] Node discovery and status reporting
+  - [ ] Testaments & Last Will maybe ?
 - [ ] Implement a class that regroups a server and multiple clients to each peers (WebMesh(server, *peers) ?)
 
 ## Tests & Lint
@@ -15,10 +24,6 @@ Execute all the session at the root of the project: `nox`
 ## Install
 
 Simply execute: `pip install webmesh`
-
-
-## WebSocket Implementation
-[TODO]
 
 
 ## WebMesh Server
