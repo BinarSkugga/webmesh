@@ -9,7 +9,7 @@ WebMesh is a WebSocket based communication library for microservices. It uses a 
 
 ## Todo before first release
 - [ ] Add SSL Support
-- [X] Improve Failure Resilience (retrying connections etc..)
+- [ ] Improve Failure Resilience (retrying connections etc..)
 - [ ] Path arguments and resolution for consumers
 - [ ] Implement a Subscription System
 - [ ] Node discovery and status reporting
