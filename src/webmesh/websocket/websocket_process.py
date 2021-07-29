@@ -1,5 +1,4 @@
 import logging
-import signal
 import socket
 import threading
 import traceback
@@ -91,7 +90,6 @@ def _handle_proto(ws,
         ws.recv(read_buffer_size)
         for event in ws.events():
             if isinstance(event, Ping):
-                print('ping!')
                 ws.send(event.response())
             elif isinstance(event, Request):
                 ws.send(AcceptConnection())

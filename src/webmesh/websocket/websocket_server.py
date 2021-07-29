@@ -78,7 +78,6 @@ class WebSocketServer(ABC):
                     try:
                         conn, addr = self.socket.accept()
                         conn.settimeout(self.socket_timeout)
-                        conn.setblocking(True)
 
                         id = uuid.uuid4().hex
                         peer = WebSocketConnection(id, conn, addr)
