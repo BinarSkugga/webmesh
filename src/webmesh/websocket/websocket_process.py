@@ -41,8 +41,6 @@ class WebSocketClientProcess:
         self.stop_event.set()
 
     def listen(self):
-        signal.signal(signal.SIGINT, self.close)
-
         self.logger = logging.getLogger(f'websocket.{self.connection.id}')
         self.stop_event = threading.Event()
         self.serializer = self.serializer_type()
@@ -93,6 +91,7 @@ def _handle_proto(ws,
         ws.recv(read_buffer_size)
         for event in ws.events():
             if isinstance(event, Ping):
+                print('ping!')
                 ws.send(event.response())
             elif isinstance(event, Request):
                 ws.send(AcceptConnection())

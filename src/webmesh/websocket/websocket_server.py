@@ -5,7 +5,7 @@ import threading
 import uuid
 from abc import ABC
 from functools import partial
-from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 from typing import Dict, Type, Any, Optional
 
 from webmesh.message_protocols import AbstractMessageProtocol
@@ -57,7 +57,7 @@ class WebSocketServer(ABC):
         self.started_event.wait(timeout)
 
     def _listen(self, host: str, port: int):
-        with Pool(processes=self.max_parallelism) as pool:
+        with ThreadPool(processes=self.max_parallelism) as pool:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
             try:

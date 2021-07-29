@@ -1,5 +1,6 @@
 import functools
 import logging
+from threading import Event
 from typing import Any, Optional, Type
 
 from webmesh.message_protocols import AbstractMessageProtocol, SimpleDictProtocol
@@ -53,3 +54,21 @@ class WebMeshServer(WebSocketServer):
 
     def listen(self, host: str = '0.0.0.0', port: int = 4269, blocking: bool = False):
         super().listen(host, port, blocking)
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s, %(name)s, %(asctime)s]'
+                                                    '[%(threadName)s]'
+                                                    '[%(filename)s:%(funcName)s:%(lineno)d]:'
+                                                    ' %(message)s')
+
+    server = WebMeshServer()
+
+    @server.on('/id')
+    def _id(payload, path, connection: WebSocketConnection):
+        print('hello')
+        return connection.id
+
+    server.listen()
+    Event().wait()
+    server.close()
