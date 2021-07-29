@@ -1,7 +1,7 @@
 # WebMesh
 ![Deploy](https://github.com/binarskugga/webmesh/actions/workflows/python-publish.yml/badge.svg)
 
-WebMesh is a specialised WebSocket sub-protocol to connect multiple microservices. It uses a custom WebSocket server based on [wsproto](https://github.com/python-hyper/wsproto) that uses python processes to achieve high parallelism and performance. It aims at providing the building blocks to inter-connect multiple services and leverage the power of containers and cloud infrastructures (corporate lorem ipsum ends here).
+WebMesh is a WebSocket based communication library for microservices. It uses a WebSocket server based on [wsproto](https://github.com/python-hyper/wsproto) that distributes clients on a thread pool to achieve high parallelism and performance. It aims at providing the building blocks to inter-connect multiple services at the application level seamlessly. (corporate lorem ipsum ends here).
 
 ## Design
 
