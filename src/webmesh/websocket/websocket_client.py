@@ -28,7 +28,7 @@ class WebSocketClient(ABC):
         self.logger = logging.getLogger(f'websocket.client')
         self.read_buffer_size = read_buffer_size
         self.disconnect_event = threading.Event()
-        self.connect_event = threading.Event()
+        self.connect_event = None
         self.serializer = serializer
         self.protocol = protocol
         self.connection = None
@@ -45,6 +45,7 @@ class WebSocketClient(ABC):
         self.connection.send(TextMessage(serialized_message))
 
     def _connect(self, host: str, port: int):
+        self.connect_event = threading.Event()
         ws = WSConnection(ConnectionType.CLIENT)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 

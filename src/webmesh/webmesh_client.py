@@ -30,5 +30,6 @@ if __name__ == '__main__':
     client.await_connected()
 
     while not client.disconnect_event.is_set():
-        client.emit('/test', 'ping')
+        if client.connect_event.is_set():
+            client.emit('/test', 'ping')
         sleep(1)
