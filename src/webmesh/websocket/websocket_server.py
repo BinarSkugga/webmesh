@@ -28,8 +28,8 @@ class AbstractWebSocketHandler(ABC):
 class WebSocketServer(ABC):
     def __init__(self,
                  handler: AbstractWebSocketHandler,
-                 serializer_type: Type[AbstractMessageSerializer],
-                 protocol_type: Type[AbstractMessageProtocol],
+                 serializer: AbstractMessageSerializer,
+                 protocol: AbstractMessageProtocol,
                  max_parallelism: int = 5,
                  max_conn_backlog: int = 5,
                  read_buffer_size: int = 1024,
@@ -39,8 +39,8 @@ class WebSocketServer(ABC):
         self.close_event = threading.Event()
         self.started_event = threading.Event()
         self.handler = handler
-        self.serializer_type = serializer_type
-        self.protocol_type = protocol_type
+        self.serializer = serializer
+        self.protocol = protocol
 
         self.max_parallelism = max_parallelism
         self.max_conn_backlog = max_conn_backlog
@@ -51,6 +51,11 @@ class WebSocketServer(ABC):
         self.socket_timeout = socket_timeout
 
     def close(self, sig=None, frame=None):
+        for peer in self.connections.values():
+            peer.close()
+            self.logger.debug(f'Closed peer connection {peer.id}')
+        self.logger.info('Server stopped')
+
         self.close_event.set()
 
     def await_started(self, timeout=None):
@@ -59,46 +64,37 @@ class WebSocketServer(ABC):
     def _listen(self, host: str, port: int):
         with ThreadPool(processes=self.max_parallelism) as pool:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.socket.settimeout(self.socket_timeout)
 
-            try:
-                self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                self.socket.settimeout(self.socket_timeout)
+            self.socket.bind((host, port))
+            self.socket.listen(self.max_conn_backlog)
 
-                self.socket.bind((host, port))
-                self.socket.listen(self.max_conn_backlog)
+            def _connection_closed(self, id: str):
+                del self.connections[id]
+                self.logger.debug(f'Unregistered client {id}')
+            _connection_closed = partial(_connection_closed, self)
 
-                def _connection_closed(self, id: str):
-                    del self.connections[id]
-                    self.logger.debug(f'Unregistered client {id}')
-                _connection_closed = partial(_connection_closed, self)
+            self.logger.info(f'Listening on ws://{host}:{port}...')
+            self.started_event.set()
+            while not self.close_event.is_set():
+                try:
+                    conn, addr = self.socket.accept()
+                    conn.settimeout(self.socket_timeout)
 
-                self.logger.info(f'Listening on ws://{host}:{port}...')
-                self.started_event.set()
-                while not self.close_event.is_set():
-                    try:
-                        conn, addr = self.socket.accept()
-                        conn.settimeout(self.socket_timeout)
+                    id = uuid.uuid4().hex
+                    peer = WebSocketConnection(id, conn, addr)
+                    self.connections[id] = peer
 
-                        id = uuid.uuid4().hex
-                        peer = WebSocketConnection(id, conn, addr)
-                        self.connections[id] = peer
-
-                        process = WebSocketClientProcess(
-                            self.handler, peer, self.read_buffer_size,
-                            self.serializer_type, self.protocol_type
-                        )
-                        pool.apply_async(process.listen, callback=_connection_closed)
-                    except socket.timeout:
-                        pass  # We expect timeouts when there is nothing going on
-                    except socket.error:
-                        raise
-            finally:
-                for peer in self.connections.values():
-                    peer.close()
-                    self.logger.debug(f'Closed peer connection {peer.id}')
-
-                self.socket.close()
-                self.logger.info('Server stopped')
+                    process = WebSocketClientProcess(
+                        self.handler, peer, self.read_buffer_size,
+                        self.serializer, self.protocol
+                    )
+                    pool.apply_async(process.listen, callback=_connection_closed)
+                except socket.timeout:
+                    pass  # We expect timeouts when there is nothing going on
+                except socket.error:
+                    raise
 
     def listen(self, host: str, port: int, blocking: bool = False):
         signal.signal(signal.SIGINT, self.close)

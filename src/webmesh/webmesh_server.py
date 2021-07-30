@@ -1,6 +1,5 @@
 import functools
 import logging
-from threading import Event
 from typing import Any, Optional, Type
 
 from webmesh.message_protocols import AbstractMessageProtocol, SimpleDictProtocol
@@ -37,11 +36,11 @@ class WebMeshServer(WebSocketServer):
     def __init__(self,
                  host: str = '0.0.0.0', port: int = 4269,
                  debug: bool = False, max_parallelism: int = 5,
-                 serializer_type: Type[AbstractMessageSerializer] = MessagePackSerializer,
-                 protocol_type: Type[AbstractMessageProtocol] = SimpleDictProtocol
+                 serializer: AbstractMessageSerializer = MessagePackSerializer(),
+                 protocol: AbstractMessageProtocol = SimpleDictProtocol()
                  ):
         handler = WebMeshHandler()
-        super().__init__(handler, serializer_type, protocol_type, max_parallelism=max_parallelism)
+        super().__init__(handler, serializer, protocol, max_parallelism=max_parallelism)
 
         self.host = host
         self.port = port
@@ -61,14 +60,11 @@ if __name__ == '__main__':
                                                     '[%(threadName)s]'
                                                     '[%(filename)s:%(funcName)s:%(lineno)d]:'
                                                     ' %(message)s')
-
     server = WebMeshServer()
 
-    @server.on('/id')
-    def _id(payload, path, connection: WebSocketConnection):
-        print('hello')
-        return connection.id
+    @server.on('/test')
+    def _test(payload, path, connection: WebSocketConnection):
+        print(path, payload, connection.id)
 
     server.listen()
-    Event().wait()
-    server.close()
+    server.close_event.wait()

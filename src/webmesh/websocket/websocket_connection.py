@@ -4,7 +4,8 @@ import socket
 from contextlib import contextmanager
 from typing import Tuple
 
-from wsproto import WSConnection
+from wsproto import WSConnection, ConnectionState
+from wsproto.events import CloseConnection
 
 
 @dataclasses.dataclass
@@ -27,14 +28,16 @@ class WebSocketConnection:
         return self.connection.events()
 
     def send(self, data):
-        encoded = self.connection.send(data)
-        self.sock.send(encoded)
+        if self.connection.state != ConnectionState.CLOSED:
+            encoded = self.connection.send(data)
+            self.sock.send(encoded)
 
     def recv(self, buffer_size: int):
-        data = self.sock.recv(buffer_size)
-        self.connection.receive_data(data)
-        return data
+        if self.connection.state != ConnectionState.CLOSED:
+            data = self.sock.recv(buffer_size)
+            self.connection.receive_data(data)
+            return data
 
-    def close(self):
-        self.sock.shutdown(socket.SHUT_RDWR)
-        self.sock.close()
+    def close(self, code: int = 1000):
+        if self.connection.state != ConnectionState.CLOSED:
+            self.send(CloseConnection(code))
