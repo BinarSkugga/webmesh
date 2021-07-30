@@ -7,11 +7,12 @@ from wsproto.events import Ping, Request, AcceptConnection, CloseConnection, Tex
     Event, RejectConnection
 
 
-def exponential_backoff(min_backoff: float = 1, max_backoff: float = 16, exceptions: tuple = (Exception,)):
+def exponential_backoff(min_backoff: float = 1, max_backoff: float = 16, exceptions: tuple = (Exception,),
+                        predicate: callable = lambda: True):
     def wrapper(func):
         def run(*args, **kwargs):
             current_backoff = min_backoff
-            while True:
+            while predicate():
                 try:
                     yield func(*args, **kwargs), current_backoff
                     current_backoff = min_backoff

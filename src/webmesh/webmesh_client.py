@@ -1,4 +1,5 @@
 import logging
+from time import sleep
 
 from webmesh.message_protocols import SimpleDictProtocol, AbstractMessageProtocol
 from webmesh.message_serializers import AbstractMessageSerializer, MessagePackSerializer
@@ -28,6 +29,6 @@ if __name__ == '__main__':
     client.connect('127.0.0.1', 4269)
     client.await_connected()
 
-    while True:
-        message = input('Send: ')
-        client.emit('/test', message)
+    while not client.disconnect_event.is_set():
+        client.emit('/test', 'ping')
+        sleep(1)

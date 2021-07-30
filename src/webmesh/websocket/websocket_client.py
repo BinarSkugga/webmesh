@@ -44,7 +44,6 @@ class WebSocketClient(ABC):
         serialized_message = self.serializer.serialize(packed_message)
         self.connection.send(TextMessage(serialized_message))
 
-    @exponential_backoff()
     def _connect(self, host: str, port: int):
         ws = WSConnection(ConnectionType.CLIENT)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -76,11 +75,12 @@ class WebSocketClient(ABC):
     def connect(self, host: str, port: int, blocking: bool = False):
         signal.signal(signal.SIGINT, self.close)
 
+        eb_func = exponential_backoff(predicate=lambda: not self.disconnect_event.is_set())(self._connect)
         if blocking:
-            _ep_wrapper(host, port, self.logger, self._connect(host, port))
+            _ep_wrapper(host, port, self.logger, eb_func(host, port))
         else:
             threading.Thread(target=_ep_wrapper, daemon=True,
-                             args=[host, port, self.logger, self._connect(host, port)]).start()
+                             args=[host, port, self.logger, eb_func(host, port)]).start()
 
     def _on_connect(self, ws: WebSocketConnection):
         self.on_connect(ws)
