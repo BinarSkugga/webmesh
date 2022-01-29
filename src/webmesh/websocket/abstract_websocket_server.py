@@ -7,21 +7,12 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Any, Optional, Type, Tuple
 
 from webmesh.websocket.abstract_websocket_connection import AbstractWebSocketConnection
-
-
-class AbstractWebSocketHandler(ABC):
-    def on_connect(self, connection: AbstractWebSocketConnection):
-        pass
-
-    def on_message(self, connection: AbstractWebSocketConnection, path: str, data: Any) -> Optional[Any]:
-        pass
-
-    def on_disconnect(self, connection: AbstractWebSocketConnection):
-        pass
+from webmesh.websocket.abstract_websocket_handler import AbstractWebSocketHandler
 
 
 class AbstractWebSocketServer(ABC):
     def __init__(self,
+                 handler: AbstractWebSocketHandler,
                  connection_class: Type[AbstractWebSocketConnection],
                  socket_timeout: float = 1
                  ):
@@ -29,6 +20,7 @@ class AbstractWebSocketServer(ABC):
         self.stop_event = threading.Event()
         self.started_event = threading.Event()
         self.pool = ThreadPoolExecutor(max_workers=5)
+        self.handler = handler
 
         self.connection_class = connection_class
         self.connections: Dict[str, AbstractWebSocketConnection] = {}

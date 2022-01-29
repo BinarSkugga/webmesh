@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG, format='[%(levelname)s, %(name)s, %(asc
 def basic_server():
     server = QueuedWebSocketServer()
     try:
-        server.start('0.0.0.0', 4269)
+        server.start('0.0.0.0', 4269, True)
         server.await_started()
 
         yield server

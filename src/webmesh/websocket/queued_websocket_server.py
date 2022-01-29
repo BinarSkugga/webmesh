@@ -3,6 +3,7 @@ from queue import Queue
 from typing import Tuple, Type
 
 from webmesh.websocket.abstract_websocket_server import AbstractWebSocketServer
+from webmesh.websocket.basic_websocket_handler import BasicWebSocketHandler
 from webmesh.websocket.queued_websocket_connection import QueuedWebSocketConnection
 
 
@@ -11,7 +12,7 @@ class QueuedWebSocketServer(AbstractWebSocketServer):
 
     def __init__(self, connection_class: Type[QueuedWebSocketConnection] = QueuedWebSocketConnection,
                  socket_timeout: float = 1):
-        super().__init__(connection_class, socket_timeout)
+        super().__init__(BasicWebSocketHandler(), connection_class, socket_timeout)
         self.queue = Queue()
 
     def on_new_connection(self, new_client: Tuple[socket.socket, tuple]):
@@ -19,9 +20,11 @@ class QueuedWebSocketServer(AbstractWebSocketServer):
 
     def process_messages(self):
         while not self.queue.empty():
-            target, message = self.queue.get()
+            target, connection, message = self.queue.get()
             if target == '__disconnected__':
-                self.connections.pop(message)
+                self.connections.pop(connection.id)
+                self.handler.on_disconnect(connection)
+            elif target == '__connected__':
+                self.handler.on_connect(connection)
             else:
-                # Handler here
-                pass
+                self.handler.on_message(connection, target, message)

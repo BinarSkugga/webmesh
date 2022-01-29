@@ -17,13 +17,10 @@ class QueuedWebSocketConnection(AbstractWebSocketConnection):
         self.queue = queue
 
     def on_connect(self):
-        self.logger.info('Connected')
+        self.queue.put(('__connected__', self, None))
 
     def on_disconnect(self):
-        self.queue.put(('__disconnected__', self.id))
-        self.logger.info('Disconnected')
+        self.queue.put(('__disconnected__', self, None))
 
     def on_message(self, target: str, message: Any):
-        self.logger.info(f'Received message at {target} !')
-        self.logger.debug(f'Message content at {target}: {message}')
-        self.queue.put((target, message))
+        self.queue.put((target, self, message))
