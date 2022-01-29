@@ -32,14 +32,16 @@ WebMesh's server works like a standard HTTP server. It uses a declarative syntax
 ```python
 from typing import Any
 
-from webmesh.websocket.websocket_connection import WebSocketConnection
+from webmesh.websocket.abstract_websocket_connection import AbstractWebSocketConnection
 from webmesh.webmesh_server import WebMeshServer
 
 server = WebMeshServer()
 
+
 @server.on('/')
-def echo(payload: Any, path: str, client: WebSocketConnection):
-    return payload
+def echo(payload: Any, path: str, client: AbstractWebSocketConnection):
+  return payload
+
 
 server.listen()
 server.await_started()

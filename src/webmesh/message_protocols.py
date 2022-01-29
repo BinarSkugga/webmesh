@@ -14,7 +14,7 @@ class AbstractMessageProtocol(ABC):
 
 class SimpleDictProtocol(AbstractMessageProtocol):
     def unpack(self, message: Any) -> Tuple[str, Any]:
-        return message['path'], message['data'] if 'data' in message else None
+        return message['target'], message['data'] if 'data' in message else None
 
     def pack(self, target: Optional[str], message: Any) -> Any:
-        return {'path': target, 'data': message}
+        return {'target': target, 'data': message}

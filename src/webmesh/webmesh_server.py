@@ -4,16 +4,16 @@ from threading import Event
 from typing import Any, Optional, Type
 
 from webmesh.message_protocols import AbstractMessageProtocol, SimpleDictProtocol
-from webmesh.message_serializers import MessagePackSerializer, AbstractMessageSerializer
-from webmesh.websocket.websocket_connection import WebSocketConnection
-from webmesh.websocket.websocket_server import WebSocketServer, AbstractWebSocketHandler
+from webmesh.message_serializers import MessagePackSerializer, AbstractMessageSerializer, StandardJsonSerializer
+from webmesh.websocket.abstract_websocket_connection import AbstractWebSocketConnection
+from webmesh.websocket.abstract_websocket_server import WebSocketServer, AbstractWebSocketHandler
 
 
 class WebMeshHandler(AbstractWebSocketHandler):
     def __init__(self):
         self.consumers = {}
 
-    def on_message(self, connection: WebSocketConnection, path: str, data: Any) -> Optional[Any]:
+    def on_message(self, connection: AbstractWebSocketConnection, path: str, data: Any) -> Optional[Any]:
         if path in self.consumers:
             consumer = self.consumers[path]
             return consumer(data, path, connection)
@@ -62,10 +62,10 @@ if __name__ == '__main__':
                                                     '[%(filename)s:%(funcName)s:%(lineno)d]:'
                                                     ' %(message)s')
 
-    server = WebMeshServer()
+    server = WebMeshServer(serializer_type=StandardJsonSerializer)
 
     @server.on('/id')
-    def _id(payload, path, connection: WebSocketConnection):
+    def _id(payload, path, connection: AbstractWebSocketConnection):
         print('hello')
         return connection.id
 

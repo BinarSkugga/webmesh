@@ -1,2 +1,2 @@
-def test_stud(server):
+def test_stud(basic_server):
     assert True
